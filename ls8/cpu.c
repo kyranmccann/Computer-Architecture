@@ -106,14 +106,14 @@ void cpu_run(struct cpu *cpu)
   while (running) {
     // TODO
     // 1. Get the value of the current instruction (in address PC).
-    unsigned char CI = cpr_ram_read(cpu, cpu -> pc);
+    unsigned char IR = cpr_ram_read(cpu, cpu -> PC);
     // 2. Figure out how many operands this next instruction requires
-    unsigned char operands = (CI & 0xC0) >> 6;
+    unsigned char operands = (IR & 0xC0) >> 6;
     // 3. Get the appropriate value(s) of the operands following this instruction
-    unsigned char op0 = cpu_ram_read(cpu, cpu -> pc + 1);
-    unsigned char op1 = cpu_ram_read(cpu, cpu -> pc + 2);
+    unsigned char op0 = cpu_ram_read(cpu, cpu -> PC + 1);
+    unsigned char op1 = cpu_ram_read(cpu, cpu -> PC + 2);
     // 4. switch() over it to decide on a course of action.
-    switch(CI)
+    switch(IR)
     {
       // 5. Do whatever the instruction should do according to the spec.
       // 6. Move the PC to the next instruction.
@@ -130,12 +130,12 @@ void cpu_run(struct cpu *cpu)
       break;
 
       default:
-      printf("I don't know this: 0x%02x\n", CI);
+      printf("I don't know this: 0x%02x\n", IR);
       running = 0;
       break;
     }
 
-    cpu -> pc += (operands + 1);
+    cpu -> PC += (operands + 1);
   }
 }
 
@@ -145,7 +145,7 @@ void cpu_run(struct cpu *cpu)
 void cpu_init(struct cpu *cpu)
 {
   // TODO: Initialize the PC and other special registers
-  cpu -> pc = 0;
+  cpu -> PC = 0;
   memset(cpu -> registers, 0, 8);
   memset(cpu -> ram, 0, 256);
 }
