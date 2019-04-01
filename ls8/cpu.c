@@ -116,7 +116,6 @@ void cpu_run(struct cpu *cpu)
     switch(IR)
     {
       // 5. Do whatever the instruction should do according to the spec.
-      // 6. Move the PC to the next instruction.
       case LDI:
       cpu -> registers[op0] = op1;
       break;
@@ -135,6 +134,7 @@ void cpu_run(struct cpu *cpu)
       break;
     }
 
+    // 6. Move the PC to the next instruction.
     cpu -> PC += (operands + 1);
   }
 }
