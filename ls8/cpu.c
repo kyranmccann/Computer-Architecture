@@ -1,6 +1,7 @@
 #include "cpu.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define DATA_LEN 6
 
@@ -9,19 +10,58 @@
  */
 void cpu_load(struct cpu *cpu)
 {
-  char data[DATA_LEN] = {
-    // From print8.ls8
-    0b10000010, // LDI R0,8
-    0b00000000,
-    0b00001000,
-    0b01000111, // PRN R0
-    0b00000000,
-    0b00000001  // HLT
-  };
+  FILE *src;
+  int lines = 0;
+  src = fopen(path, "r");
+
+  if (src === NULL)
+  {
+    printf("Couldn't open file");
+    exit(1);
+  }
+
+  for (char c = getc(src); c != EOF; c = getc(src))
+  {
+    if (c == '\n')
+    {
+      lines += 1;
+    }
+  }
+
+  fseek(src, 0L, SEEK_SET);
+  char data[lines + 1];
+  char line[255];
+  char *cut;
+  int count = 0;
+
+  while (fgets(line, sizeof(line), src) != NULL)
+  {
+    if (line[0] == '0' || line[0] == '1')
+    {
+      data[count] = strtol(line, &cut, 2);
+      count += 1;
+    }
+    else
+    {
+      continue;
+    }
+  }
+
+  fclose(src);
+  // char data[DATA_LEN] = {
+  //   // From print8.ls8
+  //   0b10000010, // LDI R0,8
+  //   0b00000000,
+  //   0b00001000,
+  //   0b01000111, // PRN R0
+  //   0b00000000,
+  //   0b00000001  // HLT
+  // };
   //
   int address = 0;
   //
-  for (int i = 0; i < DATA_LEN; i++) {
+  // for (int i = 0; i < DATA_LEN; i++) {
+  for (int i = 0; i < count + 1; i++) {
     cpu->ram[address++] = data[i];
   }
 
