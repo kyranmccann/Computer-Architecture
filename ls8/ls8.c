@@ -8,11 +8,11 @@
 int main(int argc, char *argv[])
 {
   struct cpu cpu;
-  char *file;
+  char *path;
 
   if (argc == 2)
   {
-    file = argv[1];
+    path = argv[1];
   }
   else
   {
@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
   }
 
   cpu_init(&cpu);
-  cpu_load(&cpu, file);
+  cpu_load(&cpu, path);
   cpu_run(&cpu);
 
   return 0;
