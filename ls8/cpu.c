@@ -10,45 +10,8 @@
  */
 void cpu_load(struct cpu *cpu)
 {
-  FILE *src;
-  int lines = 0;
-  src = fopen(path, "r");
 
-  if (src === NULL)
-  {
-    printf("Couldn't open file");
-    exit(1);
-  }
-
-  for (char c = getc(src); c != EOF; c = getc(src))
-  {
-    if (c == '\n')
-    {
-      lines += 1;
-    }
-  }
-
-  fseek(src, 0L, SEEK_SET);
-  char data[lines + 1];
-  char line[255];
-  char *cut;
-  int count = 0;
-
-  while (fgets(line, sizeof(line), src) != NULL)
-  {
-    if (line[0] == '0' || line[0] == '1')
-    {
-      data[count] = strtol(line, &cut, 2);
-      count += 1;
-    }
-    else
-    {
-      continue;
-    }
-  }
-
-  fclose(src);
-  // char data[DATA_LEN] = {
+  char data[DATA_LEN] = {
   //   // From print8.ls8
   //   0b10000010, // LDI R0,8
   //   0b00000000,
@@ -56,19 +19,18 @@ void cpu_load(struct cpu *cpu)
   //   0b01000111, // PRN R0
   //   0b00000000,
   //   0b00000001  // HLT
-  // };
+  };
   //
   int address = 0;
-  //
-  // for (int i = 0; i < DATA_LEN; i++) {
-  for (int i = 0; i < count + 1; i++) {
+
+  for (int i = 0; i < DATA_LEN; i++) {
     cpu->ram[address++] = data[i];
   }
 
   // TODO: Replace this with something less hard-coded
 }
 
-unsigned char cpu_ram_read(struct cpu *cpu, unsigned address)
+unsigned char cpu_ram_read(struct cpu *cpu, unsigned char address)
 {
   return cpu -> ram[address];
 }
@@ -106,9 +68,9 @@ void cpu_run(struct cpu *cpu)
   while (running) {
     // TODO
     // 1. Get the value of the current instruction (in address PC).
-    unsigned char IR = cpr_ram_read(cpu, cpu -> PC);
+    unsigned char IR = cpu_ram_read(cpu, cpu -> PC);
     // 2. Figure out how many operands this next instruction requires
-    unsigned char operands = (IR & 0xC0) >> 6;
+    unsigned char operands = IR >> 6;
     // 3. Get the appropriate value(s) of the operands following this instruction
     unsigned char op0 = cpu_ram_read(cpu, cpu -> PC + 1);
     unsigned char op1 = cpu_ram_read(cpu, cpu -> PC + 2);
@@ -129,7 +91,7 @@ void cpu_run(struct cpu *cpu)
       break;
 
       default:
-      printf("I don't know this: 0x%02x\n", IR);
+      printf("I don't know this: %d\n", IR);
       running = 0;
       break;
     }
