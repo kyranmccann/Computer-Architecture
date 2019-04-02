@@ -4,28 +4,45 @@
 #include <stdlib.h>
 
 #define DATA_LEN 6
-
+#define LR 7
 /**
  * Load the binary bytes from a .ls8 source file into a RAM array
  */
-void cpu_load(struct cpu *cpu)
+void cpu_load(struct cpu *cpu, char *path)
 {
-
-  char data[DATA_LEN] = {
-    // From print8.ls8
-    0b10000010, // LDI R0,8
-    0b00000000,
-    0b00001000,
-    0b01000111, // PRN R0
-    0b00000000,
-    0b00000001  // HLT
-  };
+  // DAY 1:
+  // char data[DATA_LEN] = {
+  //   // From print8.ls8
+  //   0b10000010, // LDI R0,8
+  //   0b00000000,
+  //   0b00001000,
+  //   0b01000111, // PRN R0
+  //   0b00000000,
+  //   0b00000001  // HLT
+  // };
+  // //
+  // int address = 0;
   //
-  int address = 0;
+  // for (int i = 0; i < DATA_LEN; i++) {
+  //   cpu->ram[address++] = data[i];
+  // }
 
-  for (int i = 0; i < DATA_LEN; i++) {
-    cpu->ram[address++] = data[i];
+  FILE *f;
+  char buffer[512];
+  f = fopen(path, "r");
+  unsigned char address = 0;
+
+  while (fgets(buffer, sizeof(buffer), f) != NULL)
+  {
+    char *end;
+    unsigned char string = strtol(buffer, &end, 2);
+    if (buffer == end)
+    {
+      continue;
+    }
+    cpu -> ram[address++] = string;
   }
+  fclose(f);
 
   // TODO: Replace this with something less hard-coded
 }
@@ -52,10 +69,24 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
   switch (op) {
     case ALU_MUL:
       // TODO
+      cpu -> registers[regA] *= cpu -> registers[regB];
       break;
 
     // TODO: implement more ALU ops
   }
+}
+
+void push(struct cpu *cpu, unsigned char value)
+{
+  cpu -> registers[LR] = cpu -> registers[LR] - 1;
+  cpu_ram_write(cpu, cpu -> registers[LR], value);
+}
+
+void pop(struct cpu *cpu)
+{
+  unsigned char _ram = cpu -> ram[cpu -> registers[LR]];
+  cpu -> registers[LR] = cpu -> registers[LR] + 1;
+  return _ram;
 }
 
 /**
@@ -88,6 +119,18 @@ void cpu_run(struct cpu *cpu)
 
       case HLT:
       running = 0;
+      break;
+
+      case MUL:
+      alu(cpu, ALU_MUL, op0, op1);
+      break;
+
+      case PUSH:
+      push(cpu, cpu -> registers[op0]);
+      break;
+
+      case POP:
+      cpu -> registers[op0] = pop(cpu);
       break;
 
       default:
