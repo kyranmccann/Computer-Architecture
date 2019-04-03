@@ -92,31 +92,31 @@ void cpu_load(struct cpu *cpu, char *path)
 /**
  * ALU
  */
-void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB)
+void alu(struct cpu *cpu, enum alu_op op, unsigned char registersA, unsigned char registersB)
 {
   // (void)cpu;
-  // (void)regA;
-  // (void)regB;
+  // (void)registersA;
+  // (void)registersB;
 
   switch (op) {
     case ALU_MUL:
       // TODO
-      cpu -> reg[regA] *= cpu -> reg[regB];
+      cpu -> registers[registersA] *= cpu -> registers[registersB];
       break;
 
     // TODO: implement more ALU ops
     case ALU_ADD:
-    cpu -> reg[regA] += cpu -> reg[regB];
+    cpu -> registers[registersA] += cpu -> registers[registersB];
     break;
   }
 }
 
 
-void (*handlers[256])(struct cpu *cpu, unsigned char opA, unsigned char opB) - {0};
+void (*handlers[256])(struct cpu *cpu, unsigned char opA, unsigned char opB) = {0};
 
 void LDI_handler (struct cpu *cpu, unsigned char opA, unsigned char opB)
 {
-  cpu -> reg[opA] = opB;
+  cpu -> registers[opA] = opB;
 }
 
 void HLT_handler(struct cpu *cpu, unsigned char opA, unsigned char opB)
@@ -127,10 +127,10 @@ void HLT_handler(struct cpu *cpu, unsigned char opA, unsigned char opB)
   exit(0);
 }
 
-void PRN_handler(struct cup *cup, unsigned char opA, unsigned char opB)
+void PRN_handler(struct cpu *cpu, unsigned char opA, unsigned char opB)
 {
   (void)opA;
-  printf("%d\n", cpu -> reg[opA]);
+  printf("%d\n", cpu -> registers[opA]);
 }
 
 void MUL_handler(struct cpu *cpu, unsigned char opA, unsigned char opB)
@@ -141,20 +141,20 @@ void MUL_handler(struct cpu *cpu, unsigned char opA, unsigned char opB)
 void POP_handler(struct cpu *cpu, unsigned char opA, unsigned char opB)
 {
   (void)opB;
-  cpu -> reg[opA] = cpu_ram_read(cpu, cpu -> reg[7]);
-  if (cpu -> reg[7] != 0xF4)
+  cpu -> registers[opA] = cpu_ram_read(cpu, cpu -> registers[7]);
+  if (cpu -> registers[7] != 0xF4)
   {
-    cpu -> reg[7] += 1;
+    cpu -> registers[7] += 1;
   }
 }
 
 void PUSH_handler(struct cpu *cpu, unsigned char opA, unsigned char opB)
 {
   (void)opB;
-  if (cpu -> reg[7] != 0x00)
+  if (cpu -> registers[7] != 0x00)
   {
-    cpu -> reg[7] -= 1;
-    cpu_ram_write(cpu, cpu -> reg[7], cpu -> reg[opA]);
+    cpu -> registers[7] -= 1;
+    cpu_ram_write(cpu, cpu -> registers[7], cpu -> registers[opA]);
   }
   else
   {
@@ -171,7 +171,7 @@ void cpu_run(struct cpu *cpu)
   int running = 1; // True until we get a HLT instruction
   unsigned char IR;
   unsigned char opA;
-  unsigned char opb;
+  unsigned char opB;
 
   while (running) {
     // TODO
@@ -183,22 +183,22 @@ void cpu_run(struct cpu *cpu)
     opA = cpu_ram_read(cpu, cpu -> PC + 1 & 0xff);
     opB = cpu_ram_read(cpu, cpu -> PC + 2 & 0xff);
     // 4. switch() over it to decide on a course of action.
+    int ops = (IR & 0xC0) >> 6;
+    // int next = (IR >> 6) + 1;
+    // address = cpu -> PC;
 
-    int next = (IR >> 6) + 1;
 
-    address = cpu -> PC;
-
-    printf("TRACE: %02X | %02X %02X %02X |", cpu->PC, IR, opA, opB);
+    // printf("TRACE: %02X | %02X %02X %02X |", cpu->PC, IR, opA, opB);
 
     // switch(IR)
     // {
     //   // 5. Do whatever the instruction should do according to the spec.
     //   case LDI:
-    //   cpu -> reg[opA] = opB;
+    //   cpu -> registers[opA] = opB;
     //   break;
     //
     //   case PRN:
-    //   printf("%d\n", cpu -> reg[opA]);
+    //   printf("%d\n", cpu -> registers[opA]);
     //   break;
     //
     //   case HLT:
@@ -227,7 +227,7 @@ void cpu_run(struct cpu *cpu)
     handlers[POP] = POP_handler;
     handlers[PUSH] = PUSH_handler;
 
-    if (handlers[IF])
+    if (handlers[IR])
     {
       handlers[IR](cpu, opA, opB);
     }
@@ -238,7 +238,7 @@ void cpu_run(struct cpu *cpu)
     }
 
     // 6. Move the PC to the next instruction.
-    cpu -> PC += next;
+    cpu -> PC += (ops + 1);
   }
 }
 
@@ -247,9 +247,9 @@ void cpu_run(struct cpu *cpu)
  */
 void cpu_init(struct cpu *cpu)
 {
-  // TODO: Initialize the PC and other special registers
+  // TODO: Initialize the PC and other special registersisters
   cpu -> PC = 0;
-  memset(cpu->reg, 0, sizeof(cpu->reg));
+  memset(cpu->registers, 0, sizeof(cpu->registers));
   memset(cpu->ram, 0, sizeof(cpu->ram));
-  cpu -> reg[7] = 0xF4;
+  cpu -> registers[7] = 0xF4;
 }

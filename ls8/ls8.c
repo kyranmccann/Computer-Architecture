@@ -10,20 +10,15 @@ int main(int argc, char *argv[])
   (void)argc;
   (void)argv;
   struct cpu cpu;
-  char *path
 
-  if (argc == 2)
-  {
-    path = argv[1];
-  }
-  else
+  if (argc < 2)
   {
     fprintf(stderr, "got a ./ls8 filename? \n");
     exit(1);
   }
 
   cpu_init(&cpu);
-  cpu_load(&cpu, path);
+  cpu_load(&cpu, argv[1]);
   cpu_run(&cpu);
 
   return 0;
