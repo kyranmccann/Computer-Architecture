@@ -35,29 +35,56 @@ void cpu_load(struct cpu *cpu, char *path)
   // for (int i = 0; i < DATA_LEN; i++) {
   //   cpu->ram[address++] = data[i];
   // }
+  char *ext = &path[strlen(path) - 4];
+  if (strcmp(ext, ".ls8") != 0)
+  {
+    fprintf(stderr, "Got an .ls8 file?\n");
+    exit(1);
+  }
+  FILE *src;
+  int lines = 0;
+  src = fopen(path, "r");
 
-  FILE *f = fopen(path, "r");
-  char line[1024];
-  unsigned char ram_address = 0x00;
-
-  if (f == NULL)
+  if (src == NULL)
   {
     fprintf(stderr, "Couldn't open file\n");
     exit(1);
   }
 
-  while (fgets(line, sizeof(line), f) != NULL)
+  for (char c = getc(src); c != EOF; c = getc(src))
   {
-    char *end_ptr;
-    unsigned char new_line = strtoul(line, &end_ptr, 2);
-    if (line == end_ptr)
+    if (c == '\n')
+    {
+      lines += 1;
+    }
+  }
+
+  fseek(src, 0L, SEEK_SET);
+
+  char data[lines + 1];
+  char line[255];
+  char *cut;
+  int count = 0;
+
+  while (fgets(line, sizeof(line), src) != NULL)
+  {
+    if (line[0] == '0' || line[0] == '1')
+    {
+      data[count] = strtol(line, &cut, 2);
+      count += 1;
+    }
+    else
     {
       continue;
     }
-    cpu_ram_write(cpu, address++, new_line);
   }
-  fclose(f);
 
+  fclose(src);
+
+  for (int address = 0; address < count + 1; address++)
+  {
+    cpu -> ram[address] = data[address];
+  }
   // TODO: Replace this with something less hard-coded
 }
 
@@ -84,6 +111,57 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
   }
 }
 
+
+void (*handlers[256])(struct cpu *cpu, unsigned char opA, unsigned char opB) - {0};
+
+void LDI_handler (struct cpu *cpu, unsigned char opA, unsigned char opB)
+{
+  cpu -> reg[opA] = opB;
+}
+
+void HLT_handler(struct cpu *cpu, unsigned char opA, unsigned char opB)
+{
+  (void)cpu;
+  (void)opA;
+  (void)opB;
+  exit(0);
+}
+
+void PRN_handler(struct cup *cup, unsigned char opA, unsigned char opB)
+{
+  (void)opA;
+  printf("%d\n", cpu -> reg[opA]);
+}
+
+void MUL_handler(struct cpu *cpu, unsigned char opA, unsigned char opB)
+{
+  alu(cpu, ALU_MUL, opA, opB);
+}
+
+void POP_handler(struct cpu *cpu, unsigned char opA, unsigned char opB)
+{
+  (void)opB;
+  cpu -> reg[opA] = cpu_ram_read(cpu, cpu -> reg[7]);
+  if (cpu -> reg[7] != 0xF4)
+  {
+    cpu -> reg[7] += 1;
+  }
+}
+
+void PUSH_handler(struct cpu *cpu, unsigned char opA, unsigned char opB)
+{
+  (void)opB;
+  if (cpu -> reg[7] != 0x00)
+  {
+    cpu -> reg[7] -= 1;
+    cpu_ram_write(cpu, cpu -> reg[7], cpu -> reg[opA]);
+  }
+  else
+  {
+    printf("Stack Overflow");
+    exit(1);
+  }
+}
 
 /**
  * Run the CPU
@@ -112,33 +190,51 @@ void cpu_run(struct cpu *cpu)
 
     printf("TRACE: %02X | %02X %02X %02X |", cpu->PC, IR, opA, opB);
 
-    switch(IR)
+    // switch(IR)
+    // {
+    //   // 5. Do whatever the instruction should do according to the spec.
+    //   case LDI:
+    //   cpu -> reg[opA] = opB;
+    //   break;
+    //
+    //   case PRN:
+    //   printf("%d\n", cpu -> reg[opA]);
+    //   break;
+    //
+    //   case HLT:
+    //   running = 0;
+    //   break;
+    //
+    //   case MUL:
+    //   alu(cpu, ALU_MUL, opA, opB);
+    //   break;
+    //
+    //   case ADD:
+    //   alu(cpu, ALU_ADD, opA, opB);
+    //   break;
+    //
+    //   default:
+    //   printf("I don't know this: 0x%02x at 0x%02x\n", IR, cpu -> PC);
+    //   running = 0;
+    //   break;
+    // }
+
+    handlers[LDI] = LDI_handler;
+    handlers[HLT] = HLT_handler;
+    handlers[PRN] = PRN_handler;
+    handlers[MUL] = MUL_handler;
+    handlers[HLT] = HLT_handler;
+    handlers[POP] = POP_handler;
+    handlers[PUSH] = PUSH_handler;
+
+    if (handlers[IF])
     {
-      // 5. Do whatever the instruction should do according to the spec.
-      case LDI:
-      cpu -> reg[opA] = opB;
-      break;
-
-      case PRN:
-      printf("%d\n", cpu -> reg[opA]);
-      break;
-
-      case HLT:
+      handlers[IR](cpu, opA, opB);
+    }
+    else
+    {
+      printf("Sorry, I don't understand that");
       running = 0;
-      break;
-
-      case MUL:
-      alu(cpu, ALU_MUL, opA, opB);
-      break;
-
-      case ADD:
-      alu(cpu, ALU_ADD, opA, opB);
-      break;
-
-      default:
-      printf("I don't know this: 0x%02x at 0x%02x\n", IR, cpu -> PC);
-      running = 0;
-      break;
     }
 
     // 6. Move the PC to the next instruction.
@@ -155,4 +251,5 @@ void cpu_init(struct cpu *cpu)
   cpu -> PC = 0;
   memset(cpu->reg, 0, sizeof(cpu->reg));
   memset(cpu->ram, 0, sizeof(cpu->ram));
+  cpu -> reg[7] = 0xF4;
 }

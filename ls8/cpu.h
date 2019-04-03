@@ -10,8 +10,6 @@ struct cpu {
 	unsigned char registers[8];
   // ram (array)
 	unsigned char ram[256];
-	unsigned char stack;
-	unsigned int equal;
 };
 
 // ALU operations
@@ -29,8 +27,9 @@ enum alu_op {
 #define LDI  0b10000010
 #define HLT  0b00000001
 #define PRN  0b01000111
-#define ADD  0b10100000
 #define MUL  0b10100010
+#define POP  0b01000110
+#define PUSH 0b01000101
 
 // TODO: more instructions here. These can be used in cpu_run().
 

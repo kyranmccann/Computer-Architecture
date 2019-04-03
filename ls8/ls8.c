@@ -5,10 +5,12 @@
 /**
  * Main
  */
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
+  (void)argc;
+  (void)argv;
   struct cpu cpu;
-  char *path;
+  char *path
 
   if (argc == 2)
   {
